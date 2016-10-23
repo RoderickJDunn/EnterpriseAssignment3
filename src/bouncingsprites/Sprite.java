@@ -11,7 +11,7 @@ public class Sprite implements Runnable {
 
 	public final static Random random = new Random();
 
-    SpritePanel panel;
+    SpriteSimulation panel;
 
     /**
      * Synchronized buffer object that manages # of box occupants
@@ -45,14 +45,14 @@ public class Sprite implements Runnable {
 
     /**
      * Randomly generate position and velocity of new Sprite
-     * @param panel
+     * @param container
      * @param occupantsBuffer
      */
-    public Sprite (SpritePanel panel, Buffer occupantsBuffer)
+    public Sprite (SpriteSimulation container, Buffer occupantsBuffer)
     {
-    	this.panel = panel;
-        x = random.nextInt(panel.getWidth());
-        y = random.nextInt(panel.getHeight());
+    	this.panel = container;
+        x = random.nextInt(container.getPanelWidth());
+        y = random.nextInt(container.getPanelHeight());
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
@@ -62,9 +62,9 @@ public class Sprite implements Runnable {
     /**
      * Pass in the positional coordinates of the new Sprite
      */
-    public Sprite (SpritePanel panel, Buffer occupantsBuffer, int x, int y)
+    public Sprite (SpriteSimulation container, Buffer occupantsBuffer, int x, int y)
     {
-        this.panel = panel;
+        this.panel = container;
         this.x = x;
         this.y = y;
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
@@ -76,7 +76,7 @@ public class Sprite implements Runnable {
     /**
      * Pass in the positional coordinates and the velocity components of the new Sprite
      */
-    public Sprite (SpritePanel panel, Buffer occupantsBuffer, int x, int y, int dx, int dy)
+    public Sprite (SpriteSimulation panel, Buffer occupantsBuffer, int x, int y, int dx, int dy)
     {
         this.panel = panel;
         this.x = x;
@@ -167,14 +167,14 @@ public class Sprite implements Runnable {
             y = 0;
             dy = -dy;
         }
-        if (x > panel.getWidth() - SIZE && dx > 0){
+        if (x > panel.getPanelWidth() - SIZE && dx > 0){
             //bounce off the right wall
-        	x = panel.getWidth() - SIZE;
+        	x = panel.getPanelWidth() - SIZE;
         	dx = - dx;
         }       
-        if (y > panel.getHeight() - SIZE && dy > 0){
+        if (y > panel.getPanelHeight() - SIZE && dy > 0){
             //bounce off the bottom wall
-        	y = panel.getHeight() - SIZE;
+        	y = panel.getPanelHeight() - SIZE;
         	dy = -dy;
         }
 
