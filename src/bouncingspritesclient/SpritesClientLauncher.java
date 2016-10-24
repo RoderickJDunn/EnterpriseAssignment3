@@ -2,6 +2,7 @@ package bouncingspritesclient;
 
 import bouncingsprites.SpriteSimulationInterface;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,70 +20,37 @@ import java.rmi.RemoteException;
 
 public class SpritesClientLauncher {
 
+    BouncingSpritesClient client;
+
+    private JFrame frame;
+    private SpritePanel panel = new SpritePanel();
+    public static int frameWidth = 400;
+    public static int frameHeight = 400;
+
+    public SpritesClientLauncher(String[] args) {
+        client = new BouncingSpritesClient(panel);
+        UIInfo uiInfo = client.initializeClient(args);
+
+        frame = new JFrame("Bouncing Sprite");
+        frame.setSize(uiInfo.panelDimensions.width, uiInfo.panelDimensions.height);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(panel);
+        frame.setVisible(true);
+
+        new Thread(client).start();
+        panel.animate();
+    }
+
     public static void main(String[] args) {
+        new SpritesClientLauncher(args);
+    }
 
-        int port = 8081;
-        String serverName = new String("localhost");
+    public void startAnimation(){
+        panel.animate();  // never returns due to infinite loop in animate method
+    }
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String myHostName = "localhost";
-
-        switch (args.length) {
-            case 0:
-                break;
-            case 1:
-                serverName = args[0];
-                break;
-            case 2:
-                serverName = args[0];
-                port = Integer.parseInt(args[1]);
-                break;
-            default:
-                System.out.println("usage: EchoClient [hostname [portnum]]");
-                break;
-        }
-        try {
-            InetAddress myHost = Inet4Address.getLocalHost();
-            myHostName = myHost.getHostName();
-        } catch (UnknownHostException e1) {
-            e1.printStackTrace();
-        }
-
-        try {
-            String message;
-            System.out.println("Attempting to connect to rmi://"+serverName+":"+port+"/SpriteSimulationService");
-            SpriteSimulationInterface simulation = (SpriteSimulationInterface)
-                    Naming.lookup("rmi://"+serverName+":"+port+"/SpriteSimulationService");
-
-            setupUserInterface();
-            do {
-                System.out.print("Input> ");
-                try {
-                    message = br.readLine();
-                    System.out.println(simulation.printSomething());
-
-                }catch(IOException e){
-                    e.printStackTrace();
-                    message = null;
-                }
-            } while (message != null);
-        }
-        catch (MalformedURLException murle) {
-            System.out.println();
-            System.out.println(
-                    "MalformedURLException");
-            System.out.println(murle);
-        }
-        catch (RemoteException re) {
-            System.out.println();
-            System.out.println("RemoteException");
-            System.out.println(re);
-        }
-        catch (NotBoundException nbe) {
-            System.out.println();
-            System.out.println("NotBoundException");
-            System.out.println(nbe);
-        }
+    // Used for testing
+    public SpritePanel getPanel() {
+        return panel;
     }
 }
-

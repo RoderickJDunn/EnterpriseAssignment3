@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class BouncingSpritesServer {
 
-    private List<Connection> connections;
+//    private List<Connection> connections;
     private ServerSocket server;
 //    private ObjectOutputStream output;
 //    private ObjectInputStream input;
@@ -33,17 +33,23 @@ public class BouncingSpritesServer {
 
     public BouncingSpritesServer() {
         this.portNum = DEFAULT_PORT;
-        connections = new ArrayList<>();
+//        connections = new ArrayList<>();
+        startSimulation();
     }
 
     public BouncingSpritesServer(int portNum) {
         this.portNum = portNum;
-        connections = new ArrayList<>();
+//        connections = new ArrayList<>();
         startSimulation();
     }
 
     public void startSimulation() {
         new Thread(simulation).start();
+//        try {
+//            Thread.sleep(4);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void runServer() {

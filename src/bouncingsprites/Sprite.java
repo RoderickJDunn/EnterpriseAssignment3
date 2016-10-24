@@ -1,6 +1,7 @@
 package bouncingsprites;
-import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Random;
 
 /**
@@ -11,7 +12,9 @@ public class Sprite implements Runnable {
 
 	public final static Random random = new Random();
 
-    SpriteSimulation panel;
+    SpriteSimulation simulation;
+
+    public LinkedList<Point> positionsHistory;
 
     /**
      * Synchronized buffer object that manages # of box occupants
@@ -20,10 +23,13 @@ public class Sprite implements Runnable {
 
     final static int SIZE = 10;
     final static int MAX_SPEED = 5;
+
     /**
      * Debugging variable to track which sprites are inside/outside
      */
-    public static int id = 0;
+    public static int idCount = 0;
+
+    public int id = 0;
 
     /**
      * Coordinates (position) of Sprite
@@ -50,13 +56,15 @@ public class Sprite implements Runnable {
      */
     public Sprite (SpriteSimulation container, Buffer occupantsBuffer)
     {
-    	this.panel = container;
+    	this.simulation = container;
         x = random.nextInt(container.getPanelWidth());
         y = random.nextInt(container.getPanelHeight());
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
-        id++;
+        positionsHistory = new LinkedList<>();
+        id = idCount;
+        idCount++;
     }
 
     /**
@@ -64,13 +72,15 @@ public class Sprite implements Runnable {
      */
     public Sprite (SpriteSimulation container, Buffer occupantsBuffer, int x, int y)
     {
-        this.panel = container;
+        this.simulation = container;
         this.x = x;
         this.y = y;
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
-        id++;
+        positionsHistory = new LinkedList<>();
+        id = idCount;
+        idCount++;
     }
 
     /**
@@ -78,13 +88,27 @@ public class Sprite implements Runnable {
      */
     public Sprite (SpriteSimulation panel, Buffer occupantsBuffer, int x, int y, int dx, int dy)
     {
-        this.panel = panel;
+        this.simulation = panel;
         this.x = x;
         this.y = y;
         this.dx = dx;
         this.dy = dy;
         this.occupantsBuffer = occupantsBuffer;
-        id++;
+        positionsHistory = new LinkedList<>();
+        id = idCount;
+        idCount++;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public Point getNextPosition(){
+        return positionsHistory.remove();
     }
 
     /**
@@ -92,8 +116,8 @@ public class Sprite implements Runnable {
      * @return true if inside, false if not
      */
     public boolean checkIfInside() {
-        if (x > panel.getBoxX()-10 && x < panel.getBoxX() + panel.getBoxWidth() &&
-                y > panel.getBoxY()-10 && y < panel.getBoxY() + panel.getBoxHeight()) {
+        if (x > simulation.getBoxX()-10 && x < simulation.getBoxX() + simulation.getBoxWidth() &&
+                y > simulation.getBoxY()-10 && y < simulation.getBoxY() + simulation.getBoxHeight()) {
             wasInside = true;
             return true;
         }
@@ -118,11 +142,6 @@ public class Sprite implements Runnable {
         } else { return false; }
     }
 
-    public void draw(Graphics g){
-        g.setColor(color);
-	    g.fillOval(x, y, SIZE, SIZE);
-    }
-
     /**
      * Set the color of this Sprite to Blue, to indiciate that it is no longer the newest Sprite
      */
@@ -134,6 +153,7 @@ public class Sprite implements Runnable {
      * Called at every frame to move the sprite.
      */
     public void move(){
+//      System.out.printf("Sprite %d is moving\n", id);
         boolean wasInside = this.wasInside;
         boolean isInside = checkIfInside();
 
@@ -167,20 +187,22 @@ public class Sprite implements Runnable {
             y = 0;
             dy = -dy;
         }
-        if (x > panel.getPanelWidth() - SIZE && dx > 0){
+        if (x > simulation.getPanelWidth() - SIZE && dx > 0){
             //bounce off the right wall
-        	x = panel.getPanelWidth() - SIZE;
+        	x = simulation.getPanelWidth() - SIZE;
         	dx = - dx;
         }       
-        if (y > panel.getPanelHeight() - SIZE && dy > 0){
+        if (y > simulation.getPanelHeight() - SIZE && dy > 0){
             //bounce off the bottom wall
-        	y = panel.getPanelHeight() - SIZE;
+        	y = simulation.getPanelHeight() - SIZE;
         	dy = -dy;
         }
 
         //make the ball move
         x += dx;
         y += dy;
+
+        positionsHistory.add(new Point(x, y));
     }
 
     @Override
