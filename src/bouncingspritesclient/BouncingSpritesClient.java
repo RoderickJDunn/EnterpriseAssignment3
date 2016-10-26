@@ -1,6 +1,9 @@
 package bouncingspritesclient;
 
+import bouncingsprites.ClientInfo;
+import bouncingsprites.Sprite;
 import bouncingsprites.SpriteSimulationInterface;
+import utils.LogIt;
 
 import java.awt.*;
 import java.io.BufferedReader;
@@ -22,6 +25,7 @@ public class BouncingSpritesClient implements Runnable{
 
     private SpriteSimulationInterface simulation;
     private SpritePanel panel;
+    private ClientInfo CLIENT_INFO;
 
     public BouncingSpritesClient(SpritePanel panel) {
         this.panel = panel;
@@ -60,6 +64,10 @@ public class BouncingSpritesClient implements Runnable{
             System.out.println("Attempting to connect to rmi://"+serverName+":"+port+"/SpriteSimulationService");
             simulation = (SpriteSimulationInterface)
                     Naming.lookup("rmi://"+serverName+":"+port+"/SpriteSimulationService");
+            // TODO: get CLIENT_ID
+            // TODO: save CLIENT_ID to file (persist so that if client restarts, new sprites from this client will have same color) -- prob don't worry about this
+            CLIENT_INFO = simulation.getClientInfo();
+            panel.setClientInfo(CLIENT_INFO);
             panel.setSimulation(simulation);
             try {
                 System.out.println(simulation.printSomething());
@@ -105,22 +113,7 @@ public class BouncingSpritesClient implements Runnable{
 
         FrameLoader loader = new FrameLoader();
         loader.preloadFrames();
-        loader.loadFrames();
-
-//        // enter main loop
-//        while (true) {
-//            try {
-//                panel.addFrame(frameQueue.remove());
-//                System.out.println(frameQueue.size());
-//            } catch (Exception e) { // TODO: catch specific exceptions
-//
-//            }
-//            try {
-//                Thread.sleep(40);
-//            } catch (InterruptedException e)  {
-//
-//            }
-//        }
+        loader.loadFrames(); // Never returns -- infinite loop
     }
 
     public class FrameLoader implements Runnable {
@@ -129,7 +122,7 @@ public class BouncingSpritesClient implements Runnable{
         public void preloadFrames() {
             for (int i=0; i<20; i++) {
                 try {
-                    ArrayList<Point> frame = simulation.getSpriteLocations();
+                    ArrayList<Sprite> frame = simulation.getSprites();
                     if (frame != null) panel.addFrame(frame);
                     else {
                         Thread.sleep(1000);
@@ -142,12 +135,11 @@ public class BouncingSpritesClient implements Runnable{
         }
 
         public void loadFrames() {
-//            for (Point point : frameQueue.getFirst()) {
-//                System.out.println(point);
-//            }
             while (true) {
                 try {
-                    panel.addFrame(simulation.getSpriteLocations());
+                    ArrayList<Sprite> sprites = simulation.getSprites();
+//                    System.out.println(sprites);
+                    panel.addFrame(sprites);
                 } catch (Exception e) { // TODO: catch specific exceptions
 
                 }

@@ -3,7 +3,9 @@ package bouncingsprites;
 import java.awt.*;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,13 +20,13 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	/**
 	 * List of sprites (bouncing balls) currently in User Interface
 	 */
-	private List<Sprite> sprites;
+	private ArrayList<Sprite> sprites;
 
 	private Buffer occupantsBuffer;
 
 	private ExecutorService execService;
 
-	private ArrayList<Point> frame;
+//	private ArrayList<Sprite> frame;
 	/**
 	 * Positional and size parameters for the UI rectangle (box)
 	 */
@@ -37,25 +39,27 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	private int boxY = frameHeight/3;
 	private int boxWidth = frameWidth/3;
 	private int boxHeight = frameWidth/3;
+	private HashMap<UUID, Color> allClients;
 
 	public SpriteSimulation(){
 		occupantsBuffer = new SynchronizedBuffer();
 		sprites = new ArrayList<>();
-		frame = new ArrayList<>();
+		allClients = new HashMap<>();
+//		frame = new ArrayList<>();
 		execService = Executors.newCachedThreadPool();
 	}
 
 	/**
 	 * Creates a new ball at the position contained in the MouseEvent provided
 	 */
-	private void newSprite (){
-		// if sprites ArrayList is 1+, change the color of the last created sprite to indicate it is not newest anymore
-		if (sprites.size()>0) sprites.get(sprites.size()-1).setColorAsOld();
-//		sprites.add(new Sprite(this, occupantsBuffer, event.getX(), event.getY()));
-		sprites.add(new Sprite(this, occupantsBuffer));
-
-		execService.execute(sprites.get(sprites.size()-1));
-		//new Thread(sprites.get(sprites.size()-1)).start(); // spawn a new Thread for the newly created Sprite
+	private void newSprite (UUID uuid){
+		// TODO: depending in what uuid is passed in, look up the appropriate color in the Database.
+		// TEMPORARY METHOD OF STORING MAPPINGS
+		Color c = allClients.get(uuid);
+		//
+		sprites.add(new Sprite(this, occupantsBuffer, c));
+//		sprites.add(new Sprite(this, occupantsBuffer, new Color((int) (Math.random() * 0xffffffff))));
+		execService.execute(sprites.get(sprites.size()-1));  // spawn a new Thread for the newly created Sprite
 		LogIt.info("New ball created");
 	}
 
@@ -76,10 +80,10 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	public void run(){
 		LogIt.info("Running simulation");
 
-		newSprite();
+//		newSprite();
 		while (true){
 
-			updateCoordinates();
+			//updateCoordinates();
 	        //sleep while waiting to display the next frame of the animation
 	        try {
 	            Thread.sleep(10);  // wake up roughly 25 frames per second
@@ -98,7 +102,7 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 //		System.out.println(sprites.size());
 //		System.out.println(spritePoints.size());
 //		if (spritePoints.size()>0) System.out.println(spritePoints.get(0));
-		frame = spritePoints;
+//		frame = spritePoints;
 	}
 
 //	private class Mouse extends MouseAdapter {
@@ -190,30 +194,30 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	}
 
 	@Override
-	public ArrayList<Point> getSpriteLocations() throws RemoteException {
+	public ArrayList<Sprite> getSprites() throws RemoteException {
 		// Send next frame (all sprite locations)
 //		System.out.println("Sending Frame: ");
 //		System.out.println(positionsQueue.peekFirst());
-		// TODO: Create the next frame before asking
-		// TODO: Issue - all clients must be synced, so the server side cannot
-		// 			'wait' to send each frame. There should be a frame available
-		//			for x milliseconds, and whoever requests it during that time
-		//			gets it, otherwise, they will get the next frame.
-/*
-		ArrayList<Point> spriteLocations = new ArrayList<>();
-		for (int i=0; i<sprites.size()-1; i++) {
-			spriteLocations.add(sprites.get(i).getNextPosition());
-		}
-		return spriteLocations;
-		*/
 //		System.out.println(frame);
-//		System.out.println("");
-		return frame;
+//		System.out.println(sprites);
+		return sprites;
 	}
 
 	@Override
-	public void createSprite() throws RemoteException {
-		newSprite();
+	public void createSprite(UUID uuid) throws RemoteException {
+		LogIt.info(uuid.toString());
+		newSprite(uuid);
+	}
+
+	@Override
+	public ClientInfo getClientInfo() throws RemoteException {
+		UUID id = UUID.randomUUID();
+		Color color = new Color((int) (Math.random() * 0xff000000));
+		ClientInfo c = new ClientInfo(id, color); // TODO: Persist this object
+		// TEMPORARY METHOD OF TRACKING CLIENT_INFO
+		allClients.put(c.getId(), c.getColor());
+		//
+		return c;
 	}
 }
 

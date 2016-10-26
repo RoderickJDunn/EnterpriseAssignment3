@@ -5,7 +5,11 @@ package bouncingspritesclient;
  */
 
 
+import bouncingsprites.ClientInfo;
+import bouncingsprites.Sprite;
 import bouncingsprites.SpriteSimulationInterface;
+import sun.rmi.runtime.Log;
+import utils.LogIt;
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -15,7 +19,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
-        import java.util.concurrent.ExecutorService;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.JPanel;
@@ -26,13 +31,15 @@ import javax.swing.JPanel;
  */
 public class SpritePanel extends JPanel {
 
-    private ArrayList<Point> lastFrame;
+    private ArrayList<Sprite> lastFrame;
 
-    public LinkedList<ArrayList<Point>> frameQueue;
+    public LinkedList<ArrayList<Sprite>> frameQueue;
 
     private ExecutorService execService;
 
     private SpriteSimulationInterface simulation;
+
+    private ClientInfo CLIENT_INFO;
     /**
      * Positional and size parameters for the UI rectangle (box)
      */
@@ -53,7 +60,8 @@ public class SpritePanel extends JPanel {
         this.simulation = simulation;
     }
 
-    public void addFrame(ArrayList<Point> frame) {
+    public void addFrame(ArrayList<Sprite> frame) {
+        LogIt.debug("Frame added");
         frameQueue.add(frame);
     }
 
@@ -87,12 +95,12 @@ public class SpritePanel extends JPanel {
         }
         else {
             // TODO: Display "Loading" screen, wait for list of frames to buffer
-            System.out.println("Frame queue is empty.. using last frame");
+//            System.out.println("Frame queue is empty.. using last frame");
         }
         for (int i=0; i<lastFrame.size(); i++) {
-            g.setColor(Color.CYAN);
+            g.setColor(lastFrame.get(i).getColor());
             //            System.out.println(points.get(i).x);
-            g.fillOval(lastFrame.get(i).x, lastFrame.get(i).y, 10, 10);;
+            g.fillOval(lastFrame.get(i).getX(), lastFrame.get(i).getY(), 10, 10);;
         }
 //        System.out.println("");
 //        System.out.println(dateFormat.format(new Date()));
@@ -131,18 +139,20 @@ public class SpritePanel extends JPanel {
         return boxHeight;
     }
 
+    public void setClientInfo(ClientInfo clientInfo) {
+        LogIt.info(clientInfo.toString());
+        this.CLIENT_INFO = clientInfo;
+    }
 
     private class Mouse extends MouseAdapter {
 
         @Override
         public void mousePressed( final MouseEvent event ){
             try {
-                simulation.createSprite();
+                simulation.createSprite(CLIENT_INFO.getId());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
-            System.out.println(getHeight());
-            System.out.println(getWidth());
         }
     }
 }

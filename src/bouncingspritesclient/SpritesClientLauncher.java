@@ -35,6 +35,7 @@ public class SpritesClientLauncher {
 
         frame = new JFrame("Bouncing Sprite");
         frame.setSize(uiInfo.panelDimensions.width, uiInfo.panelDimensions.height);
+        frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(panel);
         frame.setVisible(true);

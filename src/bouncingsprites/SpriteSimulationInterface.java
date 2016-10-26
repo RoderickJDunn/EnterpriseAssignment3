@@ -2,8 +2,8 @@ package bouncingsprites;
 
 import java.awt.*;
 import java.rmi.Remote;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * Created by Roderick on 2016-10-22.
@@ -18,7 +18,9 @@ public interface SpriteSimulationInterface extends Remote {
 
     Dimension getRectDimension() throws java.rmi.RemoteException;
 
-    ArrayList<Point> getSpriteLocations() throws java.rmi.RemoteException;
+    ArrayList<Sprite> getSprites() throws java.rmi.RemoteException;
 
-    void createSprite() throws java.rmi.RemoteException;
+    void createSprite(UUID uuid) throws java.rmi.RemoteException;
+
+    ClientInfo getClientInfo()throws java.rmi.RemoteException;
 }
