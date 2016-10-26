@@ -1,16 +1,13 @@
 package bouncingsprites;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.swing.JPanel;
+import utils.LogIt;
 
 /**
  *	The UI container for all Sprites and the rectangular box
@@ -27,28 +24,26 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 
 	private ExecutorService execService;
 
-
+	private ArrayList<Point> frame;
 	/**
 	 * Positional and size parameters for the UI rectangle (box)
 	 */
-	private int BORDER_WIDTH = 5;
-	private int boxX = 0;
-	private int boxY = 0;
-	private int boxWidth = 0;
-	private int boxHeight = 0;
+
+	private int frameWidth = 400;
+	private int frameHeight = 400;
 	private int panelWidth = 400;
 	private int panelHeight = 400;
-
-//	private ArrayList<Point> spriteLocations;
+	private int boxX = frameWidth/3;
+	private int boxY = frameHeight/3;
+	private int boxWidth = frameWidth/3;
+	private int boxHeight = frameWidth/3;
 
 	public SpriteSimulation(){
 		occupantsBuffer = new SynchronizedBuffer();
 		sprites = new ArrayList<>();
-//		spriteLocations = new ArrayList<>();
+		frame = new ArrayList<>();
 		execService = Executors.newCachedThreadPool();
-
 	}
-
 
 	/**
 	 * Creates a new ball at the position contained in the MouseEvent provided
@@ -61,7 +56,7 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 
 		execService.execute(sprites.get(sprites.size()-1));
 		//new Thread(sprites.get(sprites.size()-1)).start(); // spawn a new Thread for the newly created Sprite
-		System.out.println("New ball created");
+		LogIt.info("New ball created");
 	}
 
 	/**
@@ -73,36 +68,38 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		Sprite nextSprite = new Sprite(this, occupantsBuffer, x, y, dx, dy);
 		sprites.add(nextSprite);
 		new Thread(sprites.get(sprites.size()-1)).start(); // spawn a new Thread for the newly created Sprite
-		System.out.println("New test ball created");
+//		System.out.println("New test ball created");
+		LogIt.info("New test ball created");
 		return nextSprite;
 	}
 
 	public void run(){
-		System.out.println("Running simulation");
+		LogIt.info("Running simulation");
 
 		newSprite();
-		newSprite();
-		newSprite();
-//		while (true){
-//
-////			updateCoordinates();
-//	        //sleep while waiting to display the next frame of the animation
-//	        try {
-//	            Thread.sleep(10);  // wake up roughly 25 frames per second
-//	        }
-//	        catch ( InterruptedException exception ) {
-//	            exception.printStackTrace();
-//	        }
-//	    }
+		while (true){
+
+			updateCoordinates();
+	        //sleep while waiting to display the next frame of the animation
+	        try {
+	            Thread.sleep(10);  // wake up roughly 25 frames per second
+	        }
+	        catch ( InterruptedException exception ) {
+	            exception.printStackTrace();
+	        }
+	    }
 	}
 
-//	public void updateCoordinates() {
-//		ArrayList<Point> spritePoints = new ArrayList<>();
-//		for (int i=0; i<sprites.size()-1; i++) {
-//			spritePoints.add(sprites.get(i).getXY());
-//		}
-//
-//	}
+	public void updateCoordinates() {
+		ArrayList<Point> spritePoints = new ArrayList<>();
+		for (int i=0; i<=sprites.size()-1; i++) {
+			spritePoints.add(sprites.get(i).getPosition());
+		}
+//		System.out.println(sprites.size());
+//		System.out.println(spritePoints.size());
+//		if (spritePoints.size()>0) System.out.println(spritePoints.get(0));
+		frame = spritePoints;
+	}
 
 //	private class Mouse extends MouseAdapter {
 //		@Override
@@ -158,34 +155,38 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		return panelWidth;
 	}
 
-	public void setPanelWidth(int panelWidth) {
-		this.panelWidth = panelWidth;
+	public void setFrameWidth(int frameWidth) {
+		this.frameWidth = frameWidth;
 	}
 
 	public int getPanelHeight() {
 		return panelHeight;
 	}
 
-	public void setPanelHeight(int panelHeight) {
-		this.panelHeight = panelHeight;
-	}
-
 	@Override
 	public String printSomething() throws RemoteException {
 		String test = "IT WORKED!!!!";
 		System.out.println(test);
-		newSprite();
+//		newSprite();
 		return test;
 	}
 
 	@Override
-	public Dimension getPanelDimensions() throws RemoteException {
-		return new Dimension(panelWidth, panelHeight);
+	public Dimension getFrameDimensions() throws RemoteException {
+		return new Dimension(frameWidth, frameHeight);
 	}
 
 	@Override
 	public Dimension getRectDimension() throws RemoteException {
 		return new Dimension(getBoxWidth(), getBoxHeight());
+	}
+
+	@Override
+	public void updateUIParameters(Dimension pDimensions, Point boxXY) throws RemoteException {
+		this.panelWidth = pDimensions.width;
+		this.panelHeight = pDimensions.height;
+		this.boxX = boxXY.x;
+		this.boxY = boxXY.y;
 	}
 
 	@Override
@@ -198,11 +199,21 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		// 			'wait' to send each frame. There should be a frame available
 		//			for x milliseconds, and whoever requests it during that time
 		//			gets it, otherwise, they will get the next frame.
+/*
 		ArrayList<Point> spriteLocations = new ArrayList<>();
 		for (int i=0; i<sprites.size()-1; i++) {
 			spriteLocations.add(sprites.get(i).getNextPosition());
 		}
 		return spriteLocations;
+		*/
+//		System.out.println(frame);
+//		System.out.println("");
+		return frame;
+	}
+
+	@Override
+	public void createSprite() throws RemoteException {
+		newSprite();
 	}
 }
 

@@ -1,7 +1,7 @@
 package bouncingsprites;
+import utils.LogIt;
+
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Random;
 
 /**
@@ -10,16 +10,16 @@ import java.util.Random;
  */
 public class Sprite implements Runnable {
 
-	public final static Random random = new Random();
+    private final static Random random = new Random();
 
     SpriteSimulation simulation;
 
-    public LinkedList<Point> positionsHistory;
-
+//    public LinkedList<Point> positionsHistory;
+    private Point position;
     /**
      * Synchronized buffer object that manages # of box occupants
      */
-    public final Buffer occupantsBuffer;
+    private final Buffer occupantsBuffer;
 
     final static int SIZE = 10;
     final static int MAX_SPEED = 5;
@@ -27,9 +27,9 @@ public class Sprite implements Runnable {
     /**
      * Debugging variable to track which sprites are inside/outside
      */
-    public static int idCount = 0;
+    private static int idCount = 0;
 
-    public int id = 0;
+    private int id = 0;
 
     /**
      * Coordinates (position) of Sprite
@@ -59,10 +59,11 @@ public class Sprite implements Runnable {
     	this.simulation = container;
         x = random.nextInt(container.getPanelWidth());
         y = random.nextInt(container.getPanelHeight());
+        position = new Point(x, y);
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
-        positionsHistory = new LinkedList<>();
+//        positionsHistory = new LinkedList<>();
         id = idCount;
         idCount++;
     }
@@ -75,10 +76,11 @@ public class Sprite implements Runnable {
         this.simulation = container;
         this.x = x;
         this.y = y;
+        position = new Point(x, y);
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
-        positionsHistory = new LinkedList<>();
+//        positionsHistory = new LinkedList<>();
         id = idCount;
         idCount++;
     }
@@ -91,10 +93,11 @@ public class Sprite implements Runnable {
         this.simulation = panel;
         this.x = x;
         this.y = y;
+        position = new Point(x, y);
         this.dx = dx;
         this.dy = dy;
         this.occupantsBuffer = occupantsBuffer;
-        positionsHistory = new LinkedList<>();
+//        positionsHistory = new LinkedList<>();
         id = idCount;
         idCount++;
     }
@@ -107,18 +110,24 @@ public class Sprite implements Runnable {
         return y;
     }
 
-    public Point getNextPosition(){
-        return positionsHistory.remove();
+    public Point getPosition(){
+        return position;
     }
 
     /**
      * Determine if this sprite is currently inside the box.
      * @return true if inside, false if not
      */
-    public boolean checkIfInside() {
+    private boolean checkIfInside() {
+//        System.out.println(simulation.getBoxX());
+//        System.out.println(simulation.getBoxY());
+        LogIt.debug(String.format("%d, %d", x, y));
+        if (x > simulation.getBoxX()) LogIt.debug("More than boxX");
+        if (y > simulation.getBoxY()) LogIt.debug("More than boxY");
         if (x > simulation.getBoxX()-10 && x < simulation.getBoxX() + simulation.getBoxWidth() &&
                 y > simulation.getBoxY()-10 && y < simulation.getBoxY() + simulation.getBoxHeight()) {
             wasInside = true;
+            System.out.println("INSIDE!");
             return true;
         }
         else {
@@ -127,7 +136,7 @@ public class Sprite implements Runnable {
         }
     }
 
-    public boolean detectEntrance(boolean isInside, boolean wasInside) {
+    private boolean detectEntrance(boolean isInside, boolean wasInside) {
         if (isInside && !wasInside) {
             // Sprite attempting to enter (Sprite is inside, but was outside in last check)
             System.out.printf("Sprite %d attempting to enter\n", id);
@@ -135,9 +144,10 @@ public class Sprite implements Runnable {
         } else { return false; }
     }
 
-    public boolean detectExit(boolean isInside, boolean wasInside) {
+    private boolean detectExit(boolean isInside, boolean wasInside) {
         if (!isInside && wasInside) {
             // Sprite attempting to leave (Sprite is outside, but was inside in last check)
+            System.out.println("Sprite attempting to leave");
             return true;
         } else { return false; }
     }
@@ -152,7 +162,7 @@ public class Sprite implements Runnable {
     /**
      * Called at every frame to move the sprite.
      */
-    public void move(){
+    private void move(){
 //      System.out.printf("Sprite %d is moving\n", id);
         boolean wasInside = this.wasInside;
         boolean isInside = checkIfInside();
@@ -178,23 +188,29 @@ public class Sprite implements Runnable {
         }
         // check for bounce and make the ball bounce if necessary
         if (x < 0 && dx < 0){
-            //bounce off the left wall 
+            //bounce off the left wall
+            System.out.printf("Left Wall Collision! [%d, %d]\n", x, y);
             x = 0;
             dx = -dx;
         }
         if (y < 0 && dy < 0){
             //bounce off the top wall
+            System.out.printf("Top Wall Collision! [%d, %d]\n", x, y);
             y = 0;
             dy = -dy;
         }
         if (x > simulation.getPanelWidth() - SIZE && dx > 0){
             //bounce off the right wall
-        	x = simulation.getPanelWidth() - SIZE;
+            System.out.printf("Right Wall Collision! [%d, %d]\n", x, y);
+            x = simulation.getPanelWidth() - SIZE;
+//            System.out.println("    " + simulation.getPanelWidth());
         	dx = - dx;
         }       
         if (y > simulation.getPanelHeight() - SIZE && dy > 0){
             //bounce off the bottom wall
-        	y = simulation.getPanelHeight() - SIZE;
+            System.out.printf("Bottom Wall Collision! [%d, %d]\n", x, y);
+//            System.out.println("    " + simulation.getPanelHeight());
+            y = simulation.getPanelHeight() - SIZE;
         	dy = -dy;
         }
 
@@ -202,7 +218,7 @@ public class Sprite implements Runnable {
         x += dx;
         y += dy;
 
-        positionsHistory.add(new Point(x, y));
+        position.setLocation(x, y);
     }
 
     @Override

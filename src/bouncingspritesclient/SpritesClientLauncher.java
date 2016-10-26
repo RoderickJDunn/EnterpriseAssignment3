@@ -3,6 +3,7 @@ package bouncingspritesclient;
 import bouncingsprites.SpriteSimulationInterface;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,11 +24,12 @@ public class SpritesClientLauncher {
     BouncingSpritesClient client;
 
     private JFrame frame;
-    private SpritePanel panel = new SpritePanel();
-    public static int frameWidth = 400;
-    public static int frameHeight = 400;
+    private SpritePanel panel;
+//    public static int frameWidth = 400;
+//    public static int frameHeight = 400;
 
     public SpritesClientLauncher(String[] args) {
+        panel = new SpritePanel();
         client = new BouncingSpritesClient(panel);
         UIInfo uiInfo = client.initializeClient(args);
 
@@ -36,7 +38,11 @@ public class SpritesClientLauncher {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(panel);
         frame.setVisible(true);
+        Dimension panelDim = new Dimension(panel.getWidth(), panel.getHeight());
+        Point boxXY = new Point(panel.getBoxX(), panel.getBoxY());
+        client.sendUIParameters(panelDim, boxXY);
 
+        // TODO: Wait (block?) until connected?
         new Thread(client).start();
         panel.animate();
     }

@@ -23,7 +23,6 @@ public class BouncingSpritesClient implements Runnable{
     private SpriteSimulationInterface simulation;
     private SpritePanel panel;
 
-
     public BouncingSpritesClient(SpritePanel panel) {
         this.panel = panel;
     }
@@ -61,21 +60,16 @@ public class BouncingSpritesClient implements Runnable{
             System.out.println("Attempting to connect to rmi://"+serverName+":"+port+"/SpriteSimulationService");
             simulation = (SpriteSimulationInterface)
                     Naming.lookup("rmi://"+serverName+":"+port+"/SpriteSimulationService");
-
-//            do {
-//            System.out.print("Input> ");
+            panel.setSimulation(simulation);
             try {
-//                message = br.readLine();
                 System.out.println(simulation.printSomething());
-                Dimension pDimensions = simulation.getPanelDimensions();
+                Dimension pDimensions = simulation.getFrameDimensions();
                 Dimension rDimensions = simulation.getRectDimension();
                 return new UIInfo(pDimensions, rDimensions);
 
             }catch(IOException e){
                 e.printStackTrace();
-//                message = null;
             }
-//            } while (message != null);
         }
         catch (MalformedURLException murle) {
             System.out.println();
@@ -96,20 +90,18 @@ public class BouncingSpritesClient implements Runnable{
         return null;
     }
 
+    public void sendUIParameters(Dimension panelDim, Point boxXY) {
+        try {
+            simulation.updateUIParameters(panelDim, boxXY);
+        }catch(RemoteException e) {
+        }
+    }
 
     public void run() throws RuntimeException {
         if (simulation == null) {
             System.out.println("ERROR: client not initialized yet");
             throw new RuntimeException("Not initialized");
         }
-
-//        new Thread(new FrameLoader()).start();
-//
-//        try {
-//            Thread.sleep(4000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
 
         FrameLoader loader = new FrameLoader();
         loader.preloadFrames();
@@ -134,15 +126,15 @@ public class BouncingSpritesClient implements Runnable{
     public class FrameLoader implements Runnable {
         public FrameLoader() {}
 
-
         public void preloadFrames() {
-            for (int i=0; i<200; i++) {
+            for (int i=0; i<20; i++) {
                 try {
                     ArrayList<Point> frame = simulation.getSpriteLocations();
                     if (frame != null) panel.addFrame(frame);
                     else {
                         Thread.sleep(1000);
                     }
+                    Thread.sleep(40);
                 } catch (Exception e) { // TODO: catch specific exceptions
 
                 }
