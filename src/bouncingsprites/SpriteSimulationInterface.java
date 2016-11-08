@@ -20,7 +20,7 @@ public interface SpriteSimulationInterface extends Remote {
 
     ArrayList<Sprite> getSprites() throws java.rmi.RemoteException;
 
-    void createSprite(UUID uuid) throws java.rmi.RemoteException;
+    void createSprite(UUID uuid, Point point) throws java.rmi.RemoteException;
 
     ClientInfo getClientInfo()throws java.rmi.RemoteException;
 }

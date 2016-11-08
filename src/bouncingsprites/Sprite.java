@@ -1,6 +1,11 @@
 package bouncingsprites;
+import sun.rmi.runtime.Log;
 import utils.LogIt;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.awt.*;
 import java.io.Serializable;
 import java.util.Random;
@@ -9,46 +14,52 @@ import java.util.Random;
  * Backs one 'bouncing ball' in the User Interface.
  * This class is a modified version of a class of the same name provided by Stan Pieda
  */
+@Entity
 public class Sprite implements Runnable, Serializable {
 
-    private transient final static Random random = new Random();
+    private int id;
+
+    /**
+     * Coordinates (position) of Sprite
+     */
+    private int x;
+    private int y;
+
+    /**
+     * X & Y Velocity components of Sprite
+     */
+    private int dx;
+    private int dy;
+
+    private Color color = Color.BLACK;
+
+    /**
+     * Store whether this Sprite was inside/outside last time this was checked.
+     */
+    private boolean wasInside = false;
 
     private transient SpriteSimulation simulation;
 
-//    public LinkedList<Point> positionsHistory;
-    private Point position;
     /**
-     * Synchronized buffer object that manages # of box occupants
+     * Synchronized buffer object that manages # of boax occupants
      */
-    private transient final Buffer occupantsBuffer;
-
-    final static int SIZE = 10;
-    final static int MAX_SPEED = 5;
+    private transient Buffer occupantsBuffer;
 
     /**
      * Debugging variable to track which sprites are inside/outside
      */
     private static int idCount = 0;
 
-    private int id = 0;
+    final static int SIZE = 10;
+    final static int MAX_SPEED = 5;
+
+    private transient final static Random random = new Random();
+
 
     /**
-     * Coordinates (position) of Sprite
+     * No-arg constructor for Hibernate
      */
-    private int x;
-	private int y;
-
-    /**
-     * X & Y Velocity components of Sprite
-     */
-    private int dx;
-	private int dy;
-	private Color color = Color.BLACK;
-
-    /**
-     * Store whether this Sprite was inside/outside last time this was checked.
-     */
-    private boolean wasInside = false;
+    Sprite() {}
 
     /**
      * Randomly generate position and velocity of new Sprite
@@ -57,81 +68,123 @@ public class Sprite implements Runnable, Serializable {
      */
     public Sprite (SpriteSimulation simulation, Buffer occupantsBuffer, Color color)
     {
-    	this.simulation = simulation;
+        LogIt.debug("(Sprite) Basic Constructor");
+        this.simulation = simulation;
         x = random.nextInt(simulation.getPanelWidth());
         y = random.nextInt(simulation.getPanelHeight());
-        position = new Point(x, y);
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
         this.color = color;
-//        positionsHistory = new LinkedList<>();
         id = idCount;
         idCount++;
     }
 
     /**
-     * Pass in the positional coordinates of the new Sprite
+     * Pass in the positional coordinates and color of the new Sprite
      */
-    public Sprite (SpriteSimulation simulation, Buffer occupantsBuffer, int x, int y)
+    public Sprite (SpriteSimulation simulation, Buffer occupantsBuffer, Color color, int x, int y)
     {
+        LogIt.debug("(Sprite) Normal Constructor");
         this.simulation = simulation;
         this.x = x;
         this.y = y;
-        position = new Point(x, y);
+        this.color = color;
         dx = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         dy = random.nextInt(2*MAX_SPEED) - MAX_SPEED;
         this.occupantsBuffer = occupantsBuffer;
-//        positionsHistory = new LinkedList<>();
         id = idCount;
         idCount++;
     }
 
     /**
-     * Pass in the positional coordinates and the velocity components of the new Sprite
+     * Pass in the positional coordinates, velocity components, and color of the new Sprite
      */
-    public Sprite (SpriteSimulation simulation, Buffer occupantsBuffer, int x, int y, int dx, int dy)
+    public Sprite (SpriteSimulation simulation, Buffer occupantsBuffer, int x, int y, int dx, int dy, Color c)
     {
+        LogIt.debug("(Sprite) Full Constructor");
         this.simulation = simulation;
         this.x = x;
         this.y = y;
-        position = new Point(x, y);
         this.dx = dx;
         this.dy = dy;
         this.occupantsBuffer = occupantsBuffer;
-//        positionsHistory = new LinkedList<>();
+        this.color = c;
         id = idCount;
         idCount++;
     }
 
+
+    /**
+     * Initializes a Sprite that has been reconstructed from the database (by hibernate).
+     * @param simulation
+     * @param occupantsBuffer
+     */
+    void initializePersistedSprite(SpriteSimulation simulation, Buffer occupantsBuffer) {
+
+        // TODO: USE Executor instead of manual threading
+        if (this.simulation != null || this.occupantsBuffer != null) {
+            LogIt.error("Sprite has already been initialized!");
+            return;
+        }
+        this.simulation = simulation;
+        this.occupantsBuffer = occupantsBuffer;
+    }
+
+    @Id @GeneratedValue @Column(name = "id")
+    public int getId() {
+        return id;
+    }
+    public void setId(int id) { this.id = id; }
+
+    @Column(nullable = false)
     public int getX() {
         return x;
     }
+    public void setX(int x) {
+        this.x = x;
+    }
 
+    @Column(nullable = false)
     public int getY() {
         return y;
     }
-
-    public Point getPosition(){
-        return position;
+    public void setY(int y) {
+        this.y = y;
     }
 
+    @Column(nullable = false)
+    public int getDx() {
+        return dx;
+    }
+    public void setDx(int dx) {
+        this.dx = dx;
+    }
+
+    @Column(nullable = false)
+    public int getDy() {
+        return dy;
+    }
+    public void setDy(int dy) {
+        this.dy = dy;
+    }
+
+    @Column(nullable = false)
     public Color getColor() {
         return color;
     }
+    public void setColor(Color c) {this.color = c;}
 
     /**
      * Determine if this sprite is currently inside the box.
      * @return true if inside, false if not
      */
     private boolean checkIfInside() {
-        LogIt.debug(String.format("%d, %d", x, y));
-        if (x > simulation.getBoxX()) LogIt.debug("More than boxX");
-        if (y > simulation.getBoxY()) LogIt.debug("More than boxY");
-        if (x > simulation.getBoxX()-10 && x < simulation.getBoxX() + simulation.getBoxWidth() &&
-                y > simulation.getBoxY()-10 && y < simulation.getBoxY() + simulation.getBoxHeight()) {
+        LogIt.verbose("%d, %d", x, y);
+        if (x > simulation.getBoxX()-5 && x < simulation.getBoxX() + simulation.getBoxWidth() &&
+                y > simulation.getBoxY()-10 && y < simulation.getBoxY()-10 + simulation.getBoxHeight()) {
             wasInside = true;
-//            System.out.println("INSIDE!");
+            LogIt.debug("INSIDE!");
             return true;
         }
         else {
@@ -143,7 +196,7 @@ public class Sprite implements Runnable, Serializable {
     private boolean detectEntrance(boolean isInside, boolean wasInside) {
         if (isInside && !wasInside) {
             // Sprite attempting to enter (Sprite is inside, but was outside in last check)
-            System.out.printf("Sprite %d attempting to enter\n", id);
+            LogIt.debug("Sprite %d attempting to enter\n", id);
             return true;
         } else { return false; }
     }
@@ -151,7 +204,7 @@ public class Sprite implements Runnable, Serializable {
     private boolean detectExit(boolean isInside, boolean wasInside) {
         if (!isInside && wasInside) {
             // Sprite attempting to leave (Sprite is outside, but was inside in last check)
-            System.out.println("Sprite attempting to leave");
+            LogIt.debug("Sprite %d attempting to leave\n", id);
             return true;
         } else { return false; }
     }
@@ -182,7 +235,7 @@ public class Sprite implements Runnable, Serializable {
         }
         else if (detectExit(isInside, wasInside)) {
             // Sprite attempting to leave (Sprite is outside, but was inside in last check)
-            System.out.printf("Sprite %d attempting to exit\n", id);
+            LogIt.debug("Sprite %d attempting to exit\n", id);
             try {
                 // if vacancies <= 1, freeze  (sprite can't leave unless another sprite is inside)
                 occupantsBuffer.blockingRemove();
@@ -193,7 +246,7 @@ public class Sprite implements Runnable, Serializable {
         // check for bounce and make the ball bounce if necessary
         if (x < 0 && dx < 0){
             //bounce off the left wall
-            System.out.printf("Left Wall Collision! [%d, %d]\n", x, y);
+            LogIt.debug("Left Wall Collision! [%d, %d]\n", x, y);
             x = 0;
             dx = -dx;
         }
@@ -219,13 +272,11 @@ public class Sprite implements Runnable, Serializable {
         //make the ball move
         x += dx;
         y += dy;
-
-        position.setLocation(x, y);
     }
 
     @Override
     public void run() {
-        System.out.printf("Running Sprite %d\n", id);
+        LogIt.info("Running Sprite %d\n", id);
         while (true){
             move();
             //sleep while waiting to display the next frame of the animation

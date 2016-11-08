@@ -2,6 +2,8 @@ package bouncingsprites;
 
 //
 
+import utils.LogIt;
+
 /**
  * Manage synchronized access to the number of occupants currently within the box, and
  * limit Sprite entry and exit based on certain rules.
@@ -34,7 +36,7 @@ public class SynchronizedBuffer implements Buffer {
         // If there are already 2+ occupants inside the box, this Sprite/thread waits
         while (occupants > 1) {
             waitingToEnter++;
-            System.out.println("Line to enter: " + waitingToEnter);
+            LogIt.verbose("Line to enter: %d", waitingToEnter);
             wait();
             waitingToEnter--;
         }
@@ -54,7 +56,7 @@ public class SynchronizedBuffer implements Buffer {
         // If this is the only Sprite in the box, wait. Allow exit if another Sprite enters.
         while (occupants <= 1) {
             waitingToExit++;
-            System.out.println("Line to exit: " + waitingToExit); // for demo only
+            LogIt.verbose("Line to exit: ", waitingToExit);
             wait();
             waitingToExit--;
         }

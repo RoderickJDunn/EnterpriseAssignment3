@@ -61,19 +61,13 @@ public class SpritePanel extends JPanel {
     }
 
     public void addFrame(ArrayList<Sprite> frame) {
-        LogIt.debug("Frame added");
+        LogIt.verbose("Frame added");
         frameQueue.add(frame);
     }
 
     SimpleDateFormat dateFormat = new SimpleDateFormat("mm:ss.SSS");
     public void animate(){
-//        try {
-//            Thread.sleep(4000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         while (true){
-//            System.out.println("Repainting panel");
             repaint();
             //sleep while waiting to display the next frame of the animation
             try {
@@ -95,14 +89,12 @@ public class SpritePanel extends JPanel {
         }
         else {
             // TODO: Display "Loading" screen, wait for list of frames to buffer
-//            System.out.println("Frame queue is empty.. using last frame");
+            LogIt.verbose("Frame queue is empty.. using last frame");
         }
         for (int i=0; i<lastFrame.size(); i++) {
             g.setColor(lastFrame.get(i).getColor());
-            //            System.out.println(points.get(i).x);
             g.fillOval(lastFrame.get(i).getX(), lastFrame.get(i).getY(), 10, 10);;
         }
-//        System.out.println("");
 //        System.out.println(dateFormat.format(new Date()));
 //        System.out.printf("%d  :  %d", lastFrame.get(0).x, lastFrame.get(0).y);
     }
@@ -149,7 +141,7 @@ public class SpritePanel extends JPanel {
         @Override
         public void mousePressed( final MouseEvent event ){
             try {
-                simulation.createSprite(CLIENT_INFO.getId());
+                simulation.createSprite(CLIENT_INFO.getId(), new Point(event.getX(), event.getY()));
             } catch (RemoteException e) {
                 e.printStackTrace();
             }

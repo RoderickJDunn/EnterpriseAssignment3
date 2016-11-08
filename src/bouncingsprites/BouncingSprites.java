@@ -9,11 +9,6 @@ package bouncingsprites;
 
 public class BouncingSprites {
 	
-//    private JFrame frame;
-
-//    public static int frameWidth = 400;
-//    public static int frameHeight = 400;
-
     public BouncingSprites() {}
 
     // Used for testing

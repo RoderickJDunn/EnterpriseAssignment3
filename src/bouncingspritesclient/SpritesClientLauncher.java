@@ -44,6 +44,7 @@ public class SpritesClientLauncher {
         client.sendUIParameters(panelDim, boxXY);
 
         // TODO: Wait (block?) until connected?
+
         new Thread(client).start();
         panel.animate();
     }
@@ -60,4 +61,6 @@ public class SpritesClientLauncher {
     public SpritePanel getPanel() {
         return panel;
     }
+
+
 }

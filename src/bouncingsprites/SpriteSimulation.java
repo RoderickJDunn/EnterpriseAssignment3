@@ -9,11 +9,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import dataaccess.DataAccess;
 import utils.LogIt;
 
 /**
- *	The UI container for all Sprites and the rectangular box
- *  This class is a modified version of a class of the same name provided by Stan Pieda
+ *	The Simulation of all Sprites moving within a container box
  */
 public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 
@@ -26,41 +26,61 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 
 	private ExecutorService execService;
 
-//	private ArrayList<Sprite> frame;
+	DataAccess dataAccess;
+
 	/**
 	 * Positional and size parameters for the UI rectangle (box)
 	 */
-
 	private int frameWidth = 400;
 	private int frameHeight = 400;
-	private int panelWidth = 400;
-	private int panelHeight = 400;
+	private int panelWidth = 392;
+	private int panelHeight = 392;
 	private int boxX = frameWidth/3;
 	private int boxY = frameHeight/3;
 	private int boxWidth = frameWidth/3;
-	private int boxHeight = frameWidth/3;
+	private int boxHeight = frameHeight/3;
 	private HashMap<UUID, Color> allClients;
 
 	public SpriteSimulation(){
 		occupantsBuffer = new SynchronizedBuffer();
+		execService = Executors.newCachedThreadPool();
+		dataAccess =  DataAccess.getInstance();
 		sprites = new ArrayList<>();
 		allClients = new HashMap<>();
-//		frame = new ArrayList<>();
-		execService = Executors.newCachedThreadPool();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHandler()));
+
+		// TODO: Check DB to see if Sprite table has any entires. Load if yes, otherwise create new arraylist.
+		List persistedSprites;
+		if ((persistedSprites = dataAccess.getPersistedSprites()) != null) {
+			sprites.addAll(persistedSprites);
+			for (int i = 0; i < sprites.size(); i++) {
+				sprites.get(i).initializePersistedSprite(this, occupantsBuffer);
+				try {
+					execService.execute(sprites.get(i));
+				} catch(IllegalThreadStateException e) {
+					LogIt.error("Sprite thread is already running");
+				}
+			}
+		}
+
+		// TODO: Check DB to see if ClientInfo table has any entires. Load if yes, otherwise create new HashMap.
+		// TODO: Do we even need to persist clientInfo... If color is persisted with sprite? I suppose if same client reconnects after server restarts...
+
+
+
 	}
 
 	/**
 	 * Creates a new ball at the position contained in the MouseEvent provided
 	 */
-	private void newSprite (UUID uuid){
+	private void newSprite (UUID uuid, Point point){
 		// TODO: depending in what uuid is passed in, look up the appropriate color in the Database.
-		// TEMPORARY METHOD OF STORING MAPPINGS
+		// TEMPORARY METHOD OF STORING MAPPINGS -- should be persistent in DB
 		Color c = allClients.get(uuid);
-		//
-		sprites.add(new Sprite(this, occupantsBuffer, c));
-//		sprites.add(new Sprite(this, occupantsBuffer, new Color((int) (Math.random() * 0xffffffff))));
+		sprites.add(new Sprite(this, occupantsBuffer, c, point.x, point.y));
 		execService.execute(sprites.get(sprites.size()-1));  // spawn a new Thread for the newly created Sprite
-		LogIt.info("New ball created");
+		LogIt.info("New sprite created");
 	}
 
 	/**
@@ -69,21 +89,19 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	 */
 	public Sprite newTestSprite(int x, int y, int dx, int dy) {
 		if (sprites.size()>0) sprites.get(sprites.size()-1).setColorAsOld();
-		Sprite nextSprite = new Sprite(this, occupantsBuffer, x, y, dx, dy);
+		Sprite nextSprite = new Sprite(this, occupantsBuffer, x, y, dx, dy, Color.CYAN);
 		sprites.add(nextSprite);
 		new Thread(sprites.get(sprites.size()-1)).start(); // spawn a new Thread for the newly created Sprite
 //		System.out.println("New test ball created");
-		LogIt.info("New test ball created");
+		LogIt.info("New test sprite created");
 		return nextSprite;
 	}
 
 	public void run(){
 		LogIt.info("Running simulation");
 
-//		newSprite();
 		while (true){
 
-			//updateCoordinates();
 	        //sleep while waiting to display the next frame of the animation
 	        try {
 	            Thread.sleep(10);  // wake up roughly 25 frames per second
@@ -93,51 +111,6 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 	        }
 	    }
 	}
-
-	public void updateCoordinates() {
-		ArrayList<Point> spritePoints = new ArrayList<>();
-		for (int i=0; i<=sprites.size()-1; i++) {
-			spritePoints.add(sprites.get(i).getPosition());
-		}
-//		System.out.println(sprites.size());
-//		System.out.println(spritePoints.size());
-//		if (spritePoints.size()>0) System.out.println(spritePoints.get(0));
-//		frame = spritePoints;
-	}
-
-//	private class Mouse extends MouseAdapter {
-//		@Override
-//	    public void mousePressed( final MouseEvent event ){
-//	        newSprite(event);
-//	    }
-//	}
-
-//	@Override
-//	public void paintComponent(Graphics g){
-//		super.paintComponent(g);
-//		drawBox(g);
-//		for (Sprite sprite : sprites) {
-//			if (sprite != null){
-//				sprite.draw(g);
-//			}
-//		}
-//	}
-
-	/**
-	 * Draw the box in the center of the Frame
-	 * @param
-	 */
-//	public void drawBox(Graphics g) {
-//		boxWidth = (int) (this.getWidth()*0.33);
-//		boxHeight = (int) (this.getHeight()*0.33);
-//		boxX = (int)(this.getWidth()*0.33);
-//		boxY = (int)(this.getHeight()*0.33);
-//		// outer rectangle
-//		g.fillRect(boxX, boxY, boxWidth, boxHeight);
-//		// inner rectangle
-//		g.setColor(Color.white);
-//		g.fillRect(boxX+BORDER_WIDTH, boxY+BORDER_WIDTH, (boxWidth-BORDER_WIDTH*2), (boxHeight-BORDER_WIDTH*2));
-//	}
 
 	public int getBoxX() {
 		return boxX;
@@ -167,6 +140,7 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		return panelHeight;
 	}
 
+	// Remote Interface Methods
 	@Override
 	public String printSomething() throws RemoteException {
 		String test = "IT WORKED!!!!";
@@ -185,6 +159,9 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		return new Dimension(getBoxWidth(), getBoxHeight());
 	}
 
+	//TODO: This is useless: The idea was to eventually be able to support resizable panel, but since there are multiple
+	//			clients, these UI parameters will be overridden by each new client. For now its better just to hard-code
+	//			the panel and box dimensions server-side, and make the panel not resizable client-side.
 	@Override
 	public void updateUIParameters(Dimension pDimensions, Point boxXY) throws RemoteException {
 		this.panelWidth = pDimensions.width;
@@ -195,18 +172,14 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 
 	@Override
 	public ArrayList<Sprite> getSprites() throws RemoteException {
-		// Send next frame (all sprite locations)
-//		System.out.println("Sending Frame: ");
-//		System.out.println(positionsQueue.peekFirst());
-//		System.out.println(frame);
-//		System.out.println(sprites);
+		// Send next frame (all sprites)
 		return sprites;
 	}
 
 	@Override
-	public void createSprite(UUID uuid) throws RemoteException {
-		LogIt.info(uuid.toString());
-		newSprite(uuid);
+	public void createSprite(UUID uuid, Point point) throws RemoteException {
+		LogIt.debug("Client %s requested new Sprite", uuid.toString());
+		newSprite(uuid, point);
 	}
 
 	@Override
@@ -218,6 +191,16 @@ public class SpriteSimulation implements Runnable, SpriteSimulationInterface {
 		allClients.put(c.getId(), c.getColor());
 		//
 		return c;
+	}
+
+	private class ShutdownHandler implements Runnable {
+
+		@Override
+		public void run() {
+			LogIt.info("Saving sprites to database");
+			LogIt.info("Shutting down...");
+			dataAccess.saveSprites(sprites);
+		}
 	}
 }
 

@@ -116,7 +116,7 @@ public class BouncingSpritesClient implements Runnable{
         loader.loadFrames(); // Never returns -- infinite loop
     }
 
-    public class FrameLoader implements Runnable {
+    public class FrameLoader {
         public FrameLoader() {}
 
         public void preloadFrames() {
@@ -138,7 +138,6 @@ public class BouncingSpritesClient implements Runnable{
             while (true) {
                 try {
                     ArrayList<Sprite> sprites = simulation.getSprites();
-//                    System.out.println(sprites);
                     panel.addFrame(sprites);
                 } catch (Exception e) { // TODO: catch specific exceptions
 
@@ -149,12 +148,6 @@ public class BouncingSpritesClient implements Runnable{
                     e.printStackTrace();
                 }
             }
-        }
-
-        @Override
-        public void run() {
-            preloadFrames();
-//            loadFrames();
         }
     }
 }
